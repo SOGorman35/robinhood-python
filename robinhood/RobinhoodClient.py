@@ -109,7 +109,7 @@ class RobinhoodClient:
     return session
 
   def set_auth_token(self, auth_token):
-    self._authorization_headers['Authorization'] = 'Token {}'.format(auth_token)
+    self._authorization_headers['Authorization'] = 'Bearer {}'.format(auth_token)
 
   def set_oauth2_token(self, token_type, access_token, expires_at, refresh_token):
     self._authorization_headers['Authorization'] = '{} {}'.format(token_type, access_token)
@@ -117,7 +117,7 @@ class RobinhoodClient:
     self._oauth2_expires_at = expires_at
 
   def migrate_token(self):
-    response = self._get_session(API, authed=True).post(API_HOST + 'oauth2/migrate_token/')
+    response = self._get_session(API, authed=True).post(API_HOST + 'oauth2/migrate_token/', timeout=15)
     _raise_on_error(response)
     oauth2_details = response.json()
     self.set_oauth2_token(
@@ -135,16 +135,18 @@ class RobinhoodClient:
     body = {
         'username': username,
         'password': password,
+        'grant_type': 'password',
+        'client_id': 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
     }
     if mfa:
       body['mfa_code'] = mfa
 
-    response = self._get_session(API).post(API_HOST + 'api-token-auth/', data=body)
+    response = self._get_session(API).post(API_HOST + '/oauth2/token/', data=body, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     if 'mfa_required' in response_json:
       raise MfaRequired()
-    auth_token = response.json()['token']
+    auth_token = response.json()['access_token']
     self.set_auth_token(auth_token)
     return auth_token
 
@@ -184,7 +186,7 @@ class RobinhoodClient:
       'totp_token': 'XXXX'
     }
     """
-    response = self._get_session(API, authed=True).put(API_HOST + 'mfa/app/request/')
+    response = self._get_session(API, authed=True).put(API_HOST + 'mfa/app/request/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -197,7 +199,7 @@ class RobinhoodClient:
     }
     """
     body = {'phone_number': phone_number}
-    response = self._get_session(API, authed=True).put(API_HOST + 'mfa/sms/request/', data=body)
+    response = self._get_session(API, authed=True).put(API_HOST + 'mfa/sms/request/', data=body, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -210,7 +212,7 @@ class RobinhoodClient:
     }
     """
     body = {'mfa_code': mfa_code}
-    response = self._get_session(API, authed=True).put(API_HOST + 'mfa/app/verify/', data=body)
+    response = self._get_session(API, authed=True).put(API_HOST + 'mfa/app/verify/', data=body, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -237,7 +239,7 @@ class RobinhoodClient:
       'backup_code': '###########'
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'mfa/recovery/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'mfa/recovery/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -254,13 +256,13 @@ class RobinhoodClient:
       'enabled': False
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'mfa/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'mfa/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
   def remove_mfa(self):
     """No response, just success."""
-    response = self._get_session(API, authed=True).delete(API_HOST + 'mfa/')
+    response = self._get_session(API, authed=True).delete(API_HOST + 'mfa/', timeout=15)
     _raise_on_error(response)
 
   def get_user(self):
@@ -283,7 +285,7 @@ class RobinhoodClient:
         "created_at": "2018-02-01T22:46:39.922345Z"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'user/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'user/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -305,7 +307,7 @@ class RobinhoodClient:
         "date_of_birth": "1999-01-01"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'user/basic_info')
+    response = self._get_session(API, authed=True).get(API_HOST + 'user/basic_info', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -327,7 +329,7 @@ class RobinhoodClient:
         "security_affiliated_firm_name": ""
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'user/additional_info')
+    response = self._get_session(API, authed=True).get(API_HOST + 'user/additional_info', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -344,7 +346,7 @@ class RobinhoodClient:
         ...
     ]
     """
-    response = self._get_session(ANALYTICS, authed=True).get(ANALYTICS_HOST + 'experiments/')
+    response = self._get_session(ANALYTICS, authed=True).get(ANALYTICS_HOST + 'experiments/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -357,12 +359,12 @@ class RobinhoodClient:
         "url": "https://share.robinhood.com/matts952"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'midlands/referral/code/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'midlands/referral/code/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
   def get_margin_calls(self):
-    response = self._get_session(API, authed=True).get(API_HOST + 'margin/calls/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'margin/calls/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: auto page if needed
@@ -387,7 +389,7 @@ class RobinhoodClient:
     ]
 
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'subscription/subscription_fees/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'subscription/subscription_fees/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: auto page if needed
@@ -420,7 +422,7 @@ class RobinhoodClient:
     params = {
         'active': 'true',
     }
-    response = self._get_session(API, authed=True).get(API_HOST + 'subscription/subscriptions/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'subscription/subscriptions/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: auto page if needed
@@ -450,7 +452,7 @@ class RobinhoodClient:
         "next": null
     }
     """
-    response = self._get_session(API).get(API_HOST + 'markets/')
+    response = self._get_session(API).get(API_HOST + 'markets/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # This api likely never pages, but you never know.
@@ -460,7 +462,7 @@ class RobinhoodClient:
   def download_document_by_id(self, document_id):
     """The response is a PDF file"""
     # This document actually comes from another domain
-    response = self._get_session(API, authed=True).get(API_HOST + 'documents/{}/download/'.format(document_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'documents/{}/download/'.format(document_id), timeout=15)
     _raise_on_error(response)
     return response.content
 
@@ -484,7 +486,7 @@ class RobinhoodClient:
         "date": "2018-02-01"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'documents/{}/'.format(document_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'documents/{}/'.format(document_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -515,7 +517,7 @@ class RobinhoodClient:
         "next": null
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'documents/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'documents/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -537,7 +539,7 @@ class RobinhoodClient:
         "next": null
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'watchlists/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'watchlists/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -563,7 +565,7 @@ class RobinhoodClient:
     }
 
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'watchlists/{}/'.format(watchlist_name))
+    response = self._get_session(API, authed=True).get(API_HOST + 'watchlists/{}/'.format(watchlist_name), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -633,7 +635,7 @@ class RobinhoodClient:
         "market_push": true
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'settings/notifications')
+    response = self._get_session(API, authed=True).get(API_HOST + 'settings/notifications', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -654,7 +656,7 @@ class RobinhoodClient:
         "next": null
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'notifications/devices/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'notifications/devices/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # This probably won't autopage for a LONG time
@@ -725,7 +727,7 @@ class RobinhoodClient:
         "deposit_halted": false
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'accounts/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'accounts/', timeout=15)
     _raise_on_error(response)
     return response.json()['results'][0]
 
@@ -751,7 +753,7 @@ class RobinhoodClient:
         "investment_objective": "growth_invest_obj"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'user/investment_profile/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'user/investment_profile/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -763,7 +765,7 @@ class RobinhoodClient:
         "instrument": "https://api.robinhood.com/instruments/e6f3bb44-dcdf-445b-bbcb-2e738fd21d6d/"
     }
     """
-    response = self._get_session(API).get(API_HOST + 'instruments/{}/popularity/'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'instruments/{}/popularity/'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -795,7 +797,7 @@ class RobinhoodClient:
     params = {
         'ids': ','.join(instrument_ids),
     }
-    response = self._get_session(API).get(API_HOST + 'instruments/popularity/', params=params)
+    response = self._get_session(API).get(API_HOST + 'instruments/popularity/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -815,7 +817,7 @@ class RobinhoodClient:
         "instrument_id": "e6f3bb44-dcdf-445b-bbcb-2e738fd21d6d"
     }
     """
-    response = self._get_session(API).get(API_HOST + 'midlands/ratings/{}/'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'midlands/ratings/{}/'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -854,7 +856,7 @@ class RobinhoodClient:
     params = {
         'ids': ','.join(instrument_ids),
     }
-    response = self._get_session(API).get(API_HOST + 'midlands/ratings/', params=params)
+    response = self._get_session(API).get(API_HOST + 'midlands/ratings/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -873,7 +875,7 @@ class RobinhoodClient:
         ...
     ]
     """
-    response = self._get_session(ANALYTICS, authed=True).get(ANALYTICS_HOST + 'instruments/tag/{}/'.format(tag))
+    response = self._get_session(ANALYTICS, authed=True).get(ANALYTICS_HOST + 'instruments/tag/{}/'.format(tag), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     return response_json['instruments']
@@ -905,7 +907,7 @@ class RobinhoodClient:
     params = {
         'similar_to': instrument_id,
     }
-    response = self._get_session(ANALYTICS).get(ANALYTICS_HOST + 'instruments/', params=params)
+    response = self._get_session(ANALYTICS).get(ANALYTICS_HOST + 'instruments/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     return response_json
@@ -923,7 +925,7 @@ class RobinhoodClient:
         "name": "100 Most Popular"
     }
     """
-    response = self._get_session(API).get(API_HOST + 'midlands/tags/tag/{}/'.format(tag))
+    response = self._get_session(API).get(API_HOST + 'midlands/tags/tag/{}/'.format(tag), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     instrument_ids = [
@@ -980,7 +982,7 @@ class RobinhoodClient:
         'ids': ','.join(instrument_ids),
         'active_instruments_only': 'false',
     }
-    response = self._get_session(API).get(API_HOST + 'instruments/', params=params)
+    response = self._get_session(API).get(API_HOST + 'instruments/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -1033,7 +1035,7 @@ class RobinhoodClient:
         'instrument': instrument_id_to_url(instrument_id),
         'range': '21day',
     }
-    response = self._get_session(API).get(API_HOST + 'marketdata/earnings/'.format(instrument_id), params=params)
+    response = self._get_session(API).get(API_HOST + 'marketdata/earnings/'.format(instrument_id), params=params, timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -1066,7 +1068,7 @@ class RobinhoodClient:
         "name": "Praetorian Property, Inc. Common Stock"
     }
     """
-    response = self._get_session(API).get(API_HOST + 'instruments/{}/'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'instruments/{}/'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1109,7 +1111,7 @@ class RobinhoodClient:
         'symbol': symbol,
         'active_instruments_only': True,
     }
-    response = self._get_session(API).get(API_HOST + 'instruments/', params=params)
+    response = self._get_session(API).get(API_HOST + 'instruments/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     if len(response_json['results']) == 0:
@@ -1139,7 +1141,7 @@ class RobinhoodClient:
         ]
     }
     """
-    response = self._get_session(API).get(API_HOST + 'instruments/{}/splits'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'instruments/{}/splits'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # This is probably never the case.
@@ -1167,7 +1169,7 @@ class RobinhoodClient:
         "last_trade_price_source": "consolidated"
     }
     """
-    response = self._get_session(API).get(API_HOST + 'quotes/{}/'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'quotes/{}/'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1214,7 +1216,7 @@ class RobinhoodClient:
         ])
     }
 
-    response = self._get_session(API).get(API_HOST + 'quotes/', params=params)
+    response = self._get_session(API).get(API_HOST + 'quotes/', params=params, timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -1249,7 +1251,7 @@ class RobinhoodClient:
       params['instruments'] = ','.join([
           instrument_id_to_url(instrument_id) for instrument_id in instrument_ids
       ])
-    response = self._get_session(API).get(API_HOST + 'marketdata/prices/', params=params)
+    response = self._get_session(API).get(API_HOST + 'marketdata/prices/', params=params, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1270,7 +1272,7 @@ class RobinhoodClient:
         "instrument": "https://api.robinhood.com/instruments/0-0-4-0/"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'dividends/{}/'.format(dividend_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'dividends/{}/'.format(dividend_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1299,7 +1301,7 @@ class RobinhoodClient:
         ...
     ]
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'ach/relationships')
+    response = self._get_session(API, authed=True).get(API_HOST + 'ach/relationships', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -1328,7 +1330,7 @@ class RobinhoodClient:
         "verification_method": "bank_auth"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'ach/relationships/{}'.format(relationship_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'ach/relationships/{}'.format(relationship_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1352,7 +1354,7 @@ class RobinhoodClient:
         "url": "https://api.robinhood.com/ach/transfers/0-0-4-0/"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'ach/transfers/{}'.format(transfer_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'ach/transfers/{}'.format(transfer_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1380,7 +1382,7 @@ class RobinhoodClient:
     ]
     """
     # There's also updated_at[gte]
-    response = self._get_session(API, authed=True).get(API_HOST + 'ach/transfers/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'ach/transfers/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -1411,7 +1413,7 @@ class RobinhoodClient:
         "next": null
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'dividends/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'dividends/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -1453,7 +1455,7 @@ class RobinhoodClient:
         "extended_hours": true
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'orders/{}/'.format(order_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'orders/{}/'.format(order_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1533,13 +1535,13 @@ class RobinhoodClient:
         "disclosure": "The Popular Stocks feature is meant for informational purposes and is not ..."
     }
     """
-    response = requests.get('https://brokerage-static.s3.amazonaws.com/popular_stocks/data.json')
+    response = requests.get('https://brokerage-static.s3.amazonaws.com/popular_stocks/data.json', timeout=15)
     response_json = response.json()
     assert len(response_json) == 1
     return response_json[0]
 
   def get_home_screen_disclosures(self):
-    response = requests.get('https://brokerage-static.s3.amazonaws.com/disclosures/home_screen_disclosures.json')
+    response = requests.get('https://brokerage-static.s3.amazonaws.com/disclosures/home_screen_disclosures.json', timeout=15)
     return response.json()
 
   def get_sp500_movers(self, direction):
@@ -1570,7 +1572,7 @@ class RobinhoodClient:
     params = {
         'direction': direction,
     }
-    response = self._get_session(API, authed=True).get(API_HOST + 'midlands/movers/sp500/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'midlands/movers/sp500/', params=params, timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -1598,7 +1600,7 @@ class RobinhoodClient:
         "last_core_equity": "0.0000"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'portfolios/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'portfolios/', timeout=15)
     _raise_on_error(response)
     return response.json()['results'][0]
 
@@ -1652,7 +1654,7 @@ class RobinhoodClient:
       assert span in SPANS
       params['span'] = span
     response = self._get_session(API, authed=True).get(
-        API_HOST + 'portfolios/historicals/{}/'.format(account_number), params=params)
+        API_HOST + 'portfolios/historicals/{}/'.format(account_number), params=params, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1688,7 +1690,7 @@ class RobinhoodClient:
     params = {}
     if not include_old:
       params['nonzero'] = 'true'
-    response = self._get_session(API, authed=True).get(API_HOST + 'positions/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'positions/', params=params, timeout=15)
     _raise_on_error(response)
     portfolio_json = response.json()
     # TODO: autopage
@@ -1721,7 +1723,7 @@ class RobinhoodClient:
     account_number = use_account_number or self.get_account()['account_number']
     # Possible param: nonzero=true includes only owned securities
     response = self._get_session(API, authed=True).get(
-        API_HOST + 'accounts/{}/positions/{}/'.format(account_number, instrument_id))
+        API_HOST + 'accounts/{}/positions/{}/'.format(account_number, instrument_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1777,7 +1779,7 @@ class RobinhoodClient:
     if bounds:
       assert bounds in BOUNDS
       params['bounds'] = bounds
-    response = self._get_session(API).get(API_HOST + 'quotes/historicals/{}/'.format(symbol), params=params)
+    response = self._get_session(API).get(API_HOST + 'quotes/historicals/{}/'.format(symbol), params=params, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1837,7 +1839,7 @@ class RobinhoodClient:
     if bounds:
       assert bounds in BOUNDS
       params['bounds'] = bounds
-    response = self._get_session(API).get(API_HOST + 'quotes/historicals/', params=params)
+    response = self._get_session(API).get(API_HOST + 'quotes/historicals/', params=params, timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -1873,7 +1875,7 @@ class RobinhoodClient:
         ]
     }
     """
-    response = self._get_session(API).get(API_HOST + 'midlands/news/{}/'.format(symbol))
+    response = self._get_session(API).get(API_HOST + 'midlands/news/{}/'.format(symbol), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1893,7 +1895,7 @@ class RobinhoodClient:
         ...
     ]
     """
-    response = self._get_session(API).get(API_HOST + 'midlands/tags/instrument/{}/'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'midlands/tags/instrument/{}/'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     return response_json['tags']
@@ -1921,7 +1923,7 @@ class RobinhoodClient:
         "year_founded": 1976
     }
     """
-    response = self._get_session(API).get(API_HOST + 'fundamentals/{}/'.format(instrument_id))
+    response = self._get_session(API).get(API_HOST + 'fundamentals/{}/'.format(instrument_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -1966,7 +1968,7 @@ class RobinhoodClient:
             instrument_id_to_url(instrument_id) for instrument_id in instrument_ids
         ])
     }
-    response = self._get_session(API).get(API_HOST + 'fundamentals/', params=params)
+    response = self._get_session(API).get(API_HOST + 'fundamentals/', params=params, timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -2015,7 +2017,7 @@ class RobinhoodClient:
         ]
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'midlands/referral/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'midlands/referral/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2027,7 +2029,7 @@ class RobinhoodClient:
     Example response:
     {}
     """
-    response = self._get_session(API, authed=True).post(API_HOST + 'orders/{}/cancel/'.format(order_id))
+    response = self._get_session(API, authed=True).post(API_HOST + 'orders/{}/cancel/'.format(order_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2087,7 +2089,7 @@ class RobinhoodClient:
         'trigger': 'immediate', # see util.TRIGGERS
         'type': order_type,
     }
-    response = self._get_session(API, authed=True).post(API_HOST + 'orders/', data=body)
+    response = self._get_session(API, authed=True).post(API_HOST + 'orders/', data=body, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2098,7 +2100,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'halts/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'halts/', timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -2123,7 +2125,7 @@ class RobinhoodClient:
         }
     ]
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'activations/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'activations/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     assert not response_json['next']
@@ -2134,7 +2136,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'watchlists/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'watchlists/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2146,7 +2148,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'holdings/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'holdings/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2158,7 +2160,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'portfolios/{}/'.format(portfolio_id))
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'portfolios/{}/'.format(portfolio_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2167,7 +2169,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'portfolios/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'portfolios/', timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -2176,7 +2178,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'orders/{}/'.format(order_id))
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'orders/{}/'.format(order_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2185,11 +2187,11 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'orders/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'orders/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
-    assert not response_json['next']
+    #assert not response_json['next']
     return response_json['results']
 
   def get_crypto_currency_pairs(self):
@@ -2224,7 +2226,7 @@ class RobinhoodClient:
         ...
     ]
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(NUMMUS_HOST + 'currency_pairs/')
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(NUMMUS_HOST + 'currency_pairs/', timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2260,8 +2262,8 @@ class RobinhoodClient:
         }
     }
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).get(
-        NUMMUS_HOST + 'currency_pairs/{}/'.format(currency_pair_id))
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).get(
+        NUMMUS_HOST + 'currency_pairs/{}/'.format(currency_pair_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2280,8 +2282,8 @@ class RobinhoodClient:
         "ask_price": "6996.5900"
     }
     """
-    response = self._get_session(API, authed=True, oauth2=True).get(
-        API_HOST + 'marketdata/forex/quotes/{}/'.format(symbol_or_currency_pair_id))
+    response = self._get_session(API, authed=True, oauth2=False).get(
+        API_HOST + 'marketdata/forex/quotes/{}/'.format(symbol_or_currency_pair_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2310,8 +2312,8 @@ class RobinhoodClient:
       params['ids'] = ','.join(currency_pair_ids)
     if symbols:
       params['symbols'] = ','.join(symbols)
-    response = self._get_session(API, authed=True, oauth2=True).get(
-        API_HOST + 'marketdata/forex/quotes/', params=params)
+    response = self._get_session(API, authed=True, oauth2=False).get(
+        API_HOST + 'marketdata/forex/quotes/', params=params, timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -2363,8 +2365,8 @@ class RobinhoodClient:
     if span:
       assert span in SPANS
       params['span'] = span
-    response = self._get_session(API, authed=True, oauth2=True).get(
-        API_HOST + 'marketdata/forex/historicals/{}/'.format(currency_pair_id), params=params)
+    response = self._get_session(API, authed=True, oauth2=False).get(
+        API_HOST + 'marketdata/forex/historicals/{}/'.format(currency_pair_id), params=params, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2373,8 +2375,8 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).post(
-        NUMMUS_HOST + 'orders/{}/cancel/'.format(order_id))
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).post(
+        NUMMUS_HOST + 'orders/{}/cancel/'.format(order_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2394,7 +2396,11 @@ class RobinhoodClient:
         'time_in_force': 'gtc',
         'type': order_type,
     }
-    response = self._get_session(NUMMUS, authed=True, oauth2=True).post(NUMMUS_HOST + 'orders/')
+	
+    custom_headers = {
+        'Content-type': 'application/json; charset=utf-8',
+    }
+    response = self._get_session(NUMMUS, authed=True, oauth2=False).post(NUMMUS_HOST + 'orders/', data=json.dumps(body), headers=custom_headers, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2408,7 +2414,7 @@ class RobinhoodClient:
         "max_option_level": "option_level_2"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/suitability/')
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/suitability/', timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2417,7 +2423,7 @@ class RobinhoodClient:
     Example response:
     TODO
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/positions/{}/'.format(position_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/positions/{}/'.format(position_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2429,7 +2435,7 @@ class RobinhoodClient:
     params = {}
     if not include_old:
       params['nonzero'] = 'True'
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/positions/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/positions/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2472,7 +2478,7 @@ class RobinhoodClient:
         "ref_id": "2-0-0-0"
     }
     """
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/order/{}/'.format(order_id))
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/order/{}/'.format(order_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2528,7 +2534,7 @@ class RobinhoodClient:
     params = {}
     if instrument_id:
       params['equity_instrument_id'] = instrument_id
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/events/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/events/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2565,8 +2571,8 @@ class RobinhoodClient:
         "gamma": null
     }
     """
-    response = self._get_session(API, authed=True, oauth2=True).get(
-        API_HOST + 'marketdata/options/{}/'.format(options_instrument_id))
+    response = self._get_session(API, authed=True, oauth2=False).get(
+        API_HOST + 'marketdata/options/{}/'.format(options_instrument_id), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     return response_json
@@ -2609,7 +2615,7 @@ class RobinhoodClient:
             options_instrument_id_to_url(options_instrument_id) for options_instrument_id in options_instrument_ids
         ]),
     }
-    response = self._get_session(API, authed=True, oauth2=True).get(API_HOST + 'marketdata/options/', params=params)
+    response = self._get_session(API, authed=True, oauth2=False).get(API_HOST + 'marketdata/options/', params=params, timeout=15)
     _raise_on_error(response)
     results = response.json()['results']
     assert len(results) == len(options_instrument_ids)
@@ -2638,7 +2644,7 @@ class RobinhoodClient:
     }
     """
     response = self._get_session(API, authed=True).get(
-        API_HOST + 'options/instruments/{}/'.format(options_instrument_id))
+        API_HOST + 'options/instruments/{}/'.format(options_instrument_id), timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     return response_json
@@ -2769,7 +2775,7 @@ class RobinhoodClient:
       params['ids'] = ','.join(chain_ids),
     if instrument_ids:
       params['equity_instrument_ids'] = ','.join(instrument_ids),
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/chains/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/chains/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2799,7 +2805,7 @@ class RobinhoodClient:
         ...
     ]
     """
-    response = self._get_session(ANALYTICS, authed=True).get(ANALYTICS_HOST + 'options_discovery/{}/'.format(chain_id))
+    response = self._get_session(ANALYTICS, authed=True).get(ANALYTICS_HOST + 'options_discovery/{}/'.format(chain_id), timeout=15)
     _raise_on_error(response)
     return response.json()['results']
 
@@ -2846,7 +2852,7 @@ class RobinhoodClient:
         'account_number': account_number,
     }
     response = self._get_session(API, authed=True).get(
-        API_HOST + 'options/chains/{}/collateral/'.format(chain_id), params=params)
+        API_HOST + 'options/chains/{}/collateral/'.format(chain_id), params=params, timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2869,7 +2875,7 @@ class RobinhoodClient:
     params = {
         'acount': account_url,
     }
-    response = self._get_session(API, authed=True).get(API_HOST + 'options/level_changes/', params=params)
+    response = self._get_session(API, authed=True).get(API_HOST + 'options/level_changes/', params=params, timeout=15)
     _raise_on_error(response)
     response_json = response.json()
     # TODO: autopage
@@ -2881,7 +2887,7 @@ class RobinhoodClient:
     Example response:
     {}
     """
-    response = self._get_session(API, authed=True).post(API_HOST + 'options/orders/{}/cancel/'.format(order_id))
+    response = self._get_session(API, authed=True).post(API_HOST + 'options/orders/{}/cancel/'.format(order_id), timeout=15)
     _raise_on_error(response)
     return response.json()
 
@@ -2945,6 +2951,6 @@ class RobinhoodClient:
         'Content-type': 'application/json; charset=utf-8',
     }
     response = self._get_session(API, authed=True).post(
-        API_HOST + 'options/orders/', data=json.dumps(body), headers=custom_headers)
+        API_HOST + 'options/orders/', data=json.dumps(body), headers=custom_headers, timeout=15)
     _raise_on_error(response)
     return response.json()
